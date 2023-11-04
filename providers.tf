@@ -11,7 +11,7 @@ terraform {
   }
   backend "azurerm" {
     resource_group_name  = "rg-backend-tfstate"
-    storage_account_name = "sabetfs3a9npz46p2"
+    storage_account_name = "safeasfsegrdkjdas" //sabetfs3a9npz46p2
     container_name       = "tfstate"
     key                  = "infra.terraform.tfstate"
   }
