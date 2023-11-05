@@ -1,5 +1,8 @@
+# Name of the GitHub Actions workflow
 name: 'Terraform CI/CD for dev Branch'
 
+# Here we define the trigger for the workflow. It will run on 'push' events to the 'dev' branch
+# and 'pull_request' events that target the 'stage' branch.
 on:
   push:
     branches:
@@ -9,56 +12,73 @@ on:
     branches:
       - stage
 
+# Permissions needed by the GitHub token to run the workflow.
 permissions:
   id-token: write
   issues: write
   pull-requests: write
   contents: read
 
+# This job runs the Terraform tests and prepares a merge to the stage branch.
 jobs:
   terraform-tests-dev:
     name: 'Terraform Tests and Merge to Stage'
+    # Conditional to only run this job if the push is to the 'dev' branch.
     if: github.ref == 'refs/heads/dev'
+    # This job runs on the latest version of Ubuntu available on GitHub Actions runners.
     runs-on: ubuntu-latest
 
+    # These are the steps the job will execute, in order.
     steps:
+      # Checkout the repository code at the commit that triggered the workflow.
       - name: 'Checkout'
         uses: actions/checkout@v3
 
+      # Setup Terraform CLI in the runner environment.
       - name: 'Setup Terraform'
         uses: hashicorp/setup-terraform@v2
 
+      # Run 'terraform fmt' to check that all Terraform files are correctly formatted.
       - name: 'Terraform Format'
         run: terraform fmt -check -recursive
 
+      # Run 'terraform init' to initialize the Terraform working directory.
       - name: 'Terraform Init'
         run: terraform init
+        # Setting up environment variables with Azure credentials, required for Terraform to authenticate and manage resources.
         env:
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
+      # Run 'terraform validate' to check whether the configuration is valid.
       - name: 'Terraform Validate'
         run: terraform validate
 
+      # Setup TFLint for linting Terraform files to catch possible errors.
       - uses: terraform-linters/setup-tflint@v3
         with:
           tflint_version: latest
 
+      # Create an execution plan for Terraform.
       - name: 'Terraform Plan'
         run: terraform plan
+        # Re-using the Azure credentials in the environment variables for the plan step.
         env:
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
+      # Setup the SSH key required to push changes to the repository.
       - name: 'Setup SSH Key'
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
+      # Merge the 'dev' branch into the 'stage' branch if all tests pass.
+      # This uses a 'force merge' strategy to override any conflicts with the changes from the 'dev' branch.
       - name: 'Force Merge dev into stage if test passed'
         if: success()
         run: |
