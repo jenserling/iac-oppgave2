@@ -57,14 +57,16 @@ jobs:
 
       - name: 'Force Merge dev into stage if test passed'
         env:
-            GIT_PAT: ${{ secrets.GIT_PAT }}
-        run: |
-            git config --global user.name 'jenserling'
-            git config --global user.email 'jensebra.stud.ntnu.no'
-            git fetch origin stage:stage
-            git checkout stage
-            git merge --no-ff dev -m "Merging dev into stage [skip ci]" --allow-unrelated-histories
-            git push https://${{ secrets.GIT_PAT }}@github.com/jenserling/iac-oppgave2 HEAD:stage
+          GIT_PAT: ${{ secrets.GIT_PAT }}
+          
+        run:
+         git config --global user.name 'jenserling'
+         git config --global user.email 'jensebra.stud.ntnu.no'
+         git fetch origin stage:stage
+         git checkout stage
+         git merge -X theirs dev -m "Merging dev into stage [skip ci]"
+         git push https://${{ secrets.GIT_PAT }}@github.com/jenserling/iac-oppgave2 HEAD:stage
+
         
   stage-approval:
     name: 'Wait for Stage Approval'
@@ -82,14 +84,14 @@ jobs:
           git checkout prod
           git merge --no-ff stage -m "Merging stage into prod after approval [skip ci]"
           git push origin prod
-
+          
   prod-deployment:
-    name: 'Production Deployment'
-    if: github.ref == 'refs/heads/prod'
-    runs-on: ubuntu-latest
-    needs: stage-approval
+     name: 'Production Deployment'
+     if: github.ref == 'refs/heads/prod'
+     runs-on: ubuntu-latest
+     needs: stage-approval
 
-    steps:
+     steps:
       - name: 'Checkout'
         uses: actions/checkout@v3
 
