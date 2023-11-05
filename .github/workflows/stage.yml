@@ -74,6 +74,7 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: 'Merge stage into prod'
+        if: success()
         run: |
           git config --global user.name 'jenserling'
           git config --global user.email 'jensebra.stud.ntnu.no'
