@@ -55,15 +55,16 @@ jobs:
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
-      - name: 'Automatically Merge dev to stage after tests pass'
-        if: success()
-        run: |
-          git config --global user.name 'jenserling'
-          git config --global user.email 'jensebra.stud.ntnu.no'
-          git fetch origin stage:stage
-          git checkout stage
-          git merge --no-ff dev -m "Merging dev into stage [skip ci]" --allow-unrelated-histories
-          git push origin stage
+      - name: 'Force Merge dev into stage if tests passed'
+          run: |
+            git config --global user.name 'jenserling'
+            git config --global user.email 'jensebra.stud.ntnu.no'
+            git fetch origin stage:stage
+            git checkout stage
+            # Using git merge with the 'ours' strategy to favor 'stage' version
+            git merge -s recursive -X ours dev -m "Merging dev into stage [skip ci]"
+            git push origin stage
+          if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
 
   stage-approval:
     name: 'Wait for Stage Approval'
