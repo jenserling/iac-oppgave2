@@ -67,4 +67,4 @@ jobs:
             git fetch origin prod:prod
             git checkout prod
             git merge --no-ff --allow-unrelated-histories -X theirs stage -m "Merging stage into prod [skip ci]"
-            git push git@github.com:jenserling/iac-oppgave2.git HEAD:prod
+            git push git@github.com:jenserling/iac-oppgave2.git HEAD:prod 
