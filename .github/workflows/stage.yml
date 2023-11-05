@@ -1,9 +1,12 @@
 name: 'Terraform CI/CD for Stage Branch'
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Terraform CI/CD"]  # Name of the dev workflow file
+    types:
+      - completed
     branches:
-      - stage
+      - dev
 
 permissions:
   id-token: write
