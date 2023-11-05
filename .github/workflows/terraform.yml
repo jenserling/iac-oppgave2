@@ -35,12 +35,10 @@ jobs:
           git add .
           if [[ `git status --porcelain` ]]; then
             git -c "user.name=jenserling" -c "user.email=jensebra@stud.ntnu.no" commit -m "Format Terraform files"
-            git -c http.extraHeader="AUTHORIZATION: basic $(echo -n jenserling:${{ secrets.GIT_PAT }} | base64)" push
+            git -c http.extraHeader="AUTHORIZATION: bearer ${{ secrets.GIT_PAT }}" push
           else
             echo "No changes to commit"
           fi
-        env:
-          TERRAFORM_CLI_PATH: ${{ env.TERRAFORM_CLI_PATH }}
 
       - name: 'Terraform Plan'
         run: terraform plan
