@@ -1,60 +1,62 @@
+# Name of the GitHub Actions workflow
 name: 'Terraform CI/CD for prod Branch'
 
-
+# Triggers the workflow on any push to the 'prod' branch
 on:
   push:
     branches:
       - prod
 
+# Defines the permissions required by the GitHub Token in this workflow
 permissions:
-  id-token: write
-  issues: write
-  pull-requests: write
-  contents: read
+  id-token: write           # Allows the workflow to write to the OIDC token
+  issues: write             # Allows the workflow to create and update issues
+  pull-requests: write      # Allows the workflow to create and update pull requests
+  contents: read            # Allows the workflow to read the repository contents
 
+# Defines the job to be run within this workflow
 jobs:
   terraform-tests-stage:
     name: 'Terraform Tests and Merge to Stage'
-    
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest   # The type of virtual host machine to run the job on
 
     steps:
-      - name: 'Checkout'
-        uses: actions/checkout@v3
+      - name: 'Checkout'                # First step is to check out the code
+        uses: actions/checkout@v3       # Uses the checkout action version 3
 
-      - name: 'Setup Terraform'
+      - name: 'Setup Terraform'         # Sets up Terraform CLI
         uses: hashicorp/setup-terraform@v2
 
-      - name: 'Terraform Format'
+      - name: 'Terraform Format'        # Formats the Terraform files
         run: terraform fmt -check -recursive
 
-      - name: 'Terraform Init'
+      - name: 'Terraform Init'          # Initializes the Terraform setup
         run: terraform init
-        env:
+        env:                            # Environment variables containing Azure credentials
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
-      - name: 'Terraform Validate'
+      - name: 'Terraform Validate'      # Validates the Terraform files for correctness
         run: terraform validate
 
-      - uses: terraform-linters/setup-tflint@v3
+      - uses: terraform-linters/setup-tflint@v3  # Sets up Terraform linter called TFLint
         with:
-          tflint_version: 'latest'
+          tflint_version: 'latest'      # Specifies to use the latest version of TFLint
 
-      - name: 'Terraform Plan'
+      - name: 'Terraform Plan'          # Shows the execution plan of Terraform
         run: terraform plan
-        env:
+        env:                            # Environment variables for Azure are required again here
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
          
-      - name: 'Terraform Apply'
-        if: github.ref == 'refs/heads/prod' # Only run this on the prod branch or adjust the condition as needed
+      - name: 'Terraform Apply'         # Applies the Terraform changes
+        if: github.ref == 'refs/heads/prod' # Conditional to only run on the prod branch
         run: terraform apply -auto-approve
-        env:
+        env:                            # Azure credentials are required for applying the changes
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
