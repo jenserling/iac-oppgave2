@@ -58,14 +58,14 @@ jobs:
       - name: 'Force Merge dev into stage if test passed'
         if: success()
         env:
-          GIT_PAT: ${{ secrets.GIT_PAT }}
+          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           git config --global user.name 'jenserling'
           git config --global user.email 'jensebra.stud.ntnu.no'
           git fetch origin stage:stage
           git checkout stage
           git merge --no-ff --allow-unrelated-histories -X theirs dev -m "Merging dev into stage [skip ci]"
-          git push https://x-access-token:${{ secrets.GIT_PAT }}@github.com/jenserling/iac-oppgave2 HEAD:stage
+          git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/jenserling/iac-oppgave2 HEAD:stage
         
         
   stage-approval:
@@ -80,14 +80,14 @@ jobs:
 
       - name: 'Merge Stage to Prod with Manual Approval'
         env:
-          GIT_PAT: ${{ secrets.GIT_PAT }}
+          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           git config --global user.name 'jenserling'
           git config --global user.email 'jensebra.stud.ntnu.no'
           git fetch origin prod:prod
           git checkout prod
           git merge --no-ff stage -m "Merging stage into prod after approval [skip ci]"
-          git push https://${{ secrets.GIT_PAT }}@github.com/jenserling/iac-oppgave2 HEAD:prod
+          git push https://${{ secrets.GH_PAT }}@github.com/jenserling/iac-oppgave2 HEAD:prod
           
   prod-deployment:
     name: 'Production Deployment'
