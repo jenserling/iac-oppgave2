@@ -21,12 +21,21 @@ jobs:
     - name: 'Setup Terraform'
       uses: hashicorp/setup-terraform@v1
 
+    - name: 'Configure Git'
+      run: |
+        git config --global user.name "jenserling"
+        git config --global user.email "jensebra@stud.ntnu.no"
+
     - name: 'Terraform Format'
       run: |
         terraform fmt -recursive
-        git add -u
-        git commit -m "Format Terraform files"
-        git push
+        git add .
+        if [[ `git status --porcelain` ]]; then
+          git commit -m "Format Terraform files"
+          git push
+        else
+          echo "No changes to commit"
+        fi
 
     - name: 'Terraform Init'
       run: terraform init
