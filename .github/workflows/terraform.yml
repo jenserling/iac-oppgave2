@@ -56,7 +56,7 @@ jobs:
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
       - name: 'Force Merge dev into stage if tests passed'
-          run: |
+        run: |
             git config --global user.name 'jenserling'
             git config --global user.email 'jensebra.stud.ntnu.no'
             git fetch origin stage:stage
@@ -64,7 +64,7 @@ jobs:
             # Using git merge with the 'ours' strategy to favor 'stage' version
             git merge -s recursive -X ours dev -m "Merging dev into stage [skip ci]"
             git push origin stage
-          if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
 
   stage-approval:
     name: 'Wait for Stage Approval'
