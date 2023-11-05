@@ -61,15 +61,14 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: 'Force Merge dev into stage if test passed'
-         if: success()
-        env:
+        if: success()
         run: |
-          git config --global user.name 'jenserling'
-          git config --global user.email 'jensebra.stud.ntnu.no'
-          git fetch origin stage:stage
-          git checkout stage
-          git merge --no-ff --allow-unrelated-histories -X theirs dev -m "Merging dev into stage [skip ci]"
-          git push git@github.com:jenserling/iac-oppgave2.git HEAD:stage
+            git config --global user.name 'jenserling'
+            git config --global user.email 'jensebra.stud.ntnu.no'
+            git fetch origin stage:stage
+            git checkout stage
+            git merge --no-ff --allow-unrelated-histories -X theirs dev -m "Merging dev into stage [skip ci]"
+            git push git@github.com:jenserling/iac-oppgave2.git HEAD:stage
         
         
   stage-approval:
@@ -88,7 +87,6 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: 'Merge Stage to Prod with Manual Approval'
-        env:
         run: |
           git config --global user.name 'jenserling'
           git config --global user.email 'jensebra.stud.ntnu.no'
