@@ -1,70 +1,76 @@
+# Name of the GitHub Actions workflow
 name: 'Terraform CI/CD for dev Branch'
 
+# Specifies the events that will trigger the workflow
 on:
   push:
-    branches:
-      - dev
+    branches:         # When there is a push to branches
+      - dev           # specifically the 'dev' branch
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened, labeled]  # Types of pull request activities that trigger the workflow
     branches:
-      - stage
+      - stage         # When pull requests target the 'stage' branch
 
+# Specifies the permissions needed by the workflow
 permissions:
-  id-token: write
-  issues: write
-  pull-requests: write
-  contents: read
+  id-token: write          # Workflow has write access to GitHub's OIDC token
+  issues: write            # Workflow can create and modify issues
+  pull-requests: write     # Workflow can create and modify pull requests
+  contents: read           # Workflow can read the repository's content
 
+# Defines the jobs that will be run by the workflow
 jobs:
-  terraform-tests-dev:
+  terraform-tests-dev:     # The job ID
     name: 'Terraform Tests and Merge to Stage'
-    if: github.ref == 'refs/heads/dev'
-    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/dev'  # Condition to only run this job if the push is to 'dev' branch
+    runs-on: ubuntu-latest              # The type of virtual host machine to run the job on
 
     steps:
-      - name: 'Checkout'
-        uses: actions/checkout@v3
+      - name: 'Checkout'                # Checks out the repository code
+        uses: actions/checkout@v3       # Uses GitHub's checkout action to do so
 
-      - name: 'Setup Terraform'
+      - name: 'Setup Terraform'         # Sets up Terraform CLI
         uses: hashicorp/setup-terraform@v2
 
-      - name: 'Terraform Format'
+      - name: 'Terraform Format'        # Checks the format of the Terraform files
         run: terraform fmt -check -recursive
 
-      - name: 'Terraform Init'
+      - name: 'Terraform Init'          # Initializes Terraform
         run: terraform init
-        env:
+        env:                            # Sets up environment variables for Azure credentials
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
-      - name: 'Terraform Validate'
+      - name: 'Terraform Validate'      # Validates the Terraform files
         run: terraform validate
 
-      - uses: terraform-linters/setup-tflint@v3
+      - uses: terraform-linters/setup-tflint@v3  # Sets up Terraform linter
         with:
           tflint_version: latest
 
-      - name: 'Terraform Plan'
+      - name: 'Terraform Plan'          # Runs Terraform plan to show changes that will be applied
         run: terraform plan
-        env:
+        env:                            # Environment variables repeated for Azure
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
-      - name: 'Setup SSH Key'
+      - name: 'Setup SSH Key'           # Sets up SSH keys for authentication
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: 'Force Merge dev into stage if test passed'
-        if: success()
+        if: success()                   # Only runs if all previous steps were successful
         run: |
-            git config --global user.name 'jenserling'
-            git config --global user.email 'jensebra.stud.ntnu.no'
-            git fetch origin stage:stage
-            git checkout stage
+            git config --global user.name 'jenserling'  # Sets the Git user name for commits
+            git config --global user.email 'jensebra.stud.ntnu.no'  # Sets the Git user email for commits
+            git fetch origin stage:stage  # Fetches the 'stage' branch
+            git checkout stage            # Switches to the 'stage' branch
             git merge --no-ff --allow-unrelated-histories -X theirs dev -m "Merging dev into stage [skip ci]"
+            # Force merges 'dev' into 'stage', preferring changes from 'dev' in conflicts
             git push git@github.com:jenserling/iac-oppgave2.git HEAD:stage
+            # Pushes the changes to the 'stage' branch on the remote repository
