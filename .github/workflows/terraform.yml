@@ -65,7 +65,7 @@ jobs:
           git fetch origin stage:stage
           git checkout stage
           git merge --no-ff --allow-unrelated-histories -X theirs dev -m "Merging dev into stage [skip ci]"
-          git push https://${{ secrets.GIT_PAT }}@github.com/jenserling/iac-oppgave2 HEAD:stage
+          git push https://x-access-token:${{ secrets.GIT_PAT }}@github.com/jenserling/iac-oppgave2 HEAD:stage
         
         
   stage-approval:
