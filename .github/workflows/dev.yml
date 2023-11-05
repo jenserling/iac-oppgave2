@@ -1,0 +1,70 @@
+name: 'Terraform CI/CD'
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+    branches:
+      - stage
+
+permissions:
+  id-token: write
+  issues: write
+  pull-requests: write
+  contents: read
+
+jobs:
+  terraform-tests-dev:
+    name: 'Terraform Tests and Merge to Stage'
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v3
+
+      - name: 'Setup Terraform'
+        uses: hashicorp/setup-terraform@v2
+
+      - name: 'Terraform Format'
+        run: terraform fmt -check -recursive
+
+      - name: 'Terraform Init'
+        run: terraform init
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+      - name: 'Terraform Validate'
+        run: terraform validate
+
+      - uses: terraform-linters/setup-tflint@v3
+        with:
+          tflint_version: latest
+
+      - name: 'Terraform Plan'
+        run: terraform plan
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+      - name: 'Setup SSH Key'
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: 'Force Merge dev into stage if test passed'
+        if: success()
+        run: |
+            git config --global user.name 'jenserling'
+            git config --global user.email 'jensebra.stud.ntnu.no'
+            git fetch origin stage:stage
+            git checkout stage
+            git merge --no-ff --allow-unrelated-histories -X theirs dev -m "Merging dev into stage [skip ci]"
+            git push git@github.com:jenserling/iac-oppgave2.git HEAD:stage
