@@ -1,82 +1,80 @@
+# Name of the GitHub Actions workflow
 name: 'Terraform CI/CD for stage Branch'
 
-
+# Specifies the events that will trigger the workflow
 on:
   workflow_run:
-    workflows: ["Terraform CI/CD for dev Branch"]  # Name of the dev workflow file
+    workflows: ["Terraform CI/CD for dev Branch"]  # Listens to the completion of this workflow
     types:
-      - completed
+      - completed                                  # Triggers when the workflow is completed
     branches:
-      - dev
+      - dev                                        # Only listens to the workflow completion if it's run on the 'dev' branch
 
+# Permissions that the GitHub Actions runner has
 permissions:
-  id-token: write
-  issues: write
-  pull-requests: write
-  contents: read
+  id-token: write           # Token permissions to write ID tokens
+  issues: write             # Permissions to write to issues
+  pull-requests: write      # Permissions to write to pull requests
+  contents: read            # Permissions to read the repository contents
 
+# Defines a single job in the workflow
 jobs:
   terraform-tests-stage:
     name: 'Terraform Tests and Merge to Stage'
-    
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest   # Specifies the runner environment to use
 
     steps:
-      - name: 'Checkout'
-        uses: actions/checkout@v3
+      - name: 'Checkout'                # Checks out the repository code
+        uses: actions/checkout@v3       # Uses v3 of the checkout action
 
-      - name: 'Setup Terraform'
+      - name: 'Setup Terraform'         # Sets up Terraform CLI in the runner environment
         uses: hashicorp/setup-terraform@v2
 
-      - name: 'Terraform Format'
+      - name: 'Terraform Format'        # Checks the Terraform files for correct formatting
         run: terraform fmt -check -recursive
 
-      - name: 'Terraform Init'
+      - name: 'Terraform Init'          # Initializes Terraform in the working directory
         run: terraform init
-        env:
+        env:                            # Sets environment variables for Azure credentials
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
-      - name: 'Terraform Validate'
+      - name: 'Terraform Validate'      # Validates the Terraform files
         run: terraform validate
 
-      - uses: terraform-linters/setup-tflint@v3
+      - uses: terraform-linters/setup-tflint@v3  # Sets up Terraform Linter (TFLint)
         with:
-          tflint_version: 'latest'
+          tflint_version: 'latest'      # Uses the latest version of TFLint
 
-      - name: 'Terraform Plan'
+      - name: 'Terraform Plan'          # Generates Terraform plan to show what actions will be performed
         run: terraform plan
-        env:
+        env:                            # Azure credentials are set again for this step
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
-      - name: 'Setup SSH Key'
+      - name: 'Setup SSH Key'           # Sets up SSH key to interact with the repository
         uses: webfactory/ssh-agent@v0.5.3
         with:
-            ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
         
-      - name: 'Fetch all branches from remote'
+      - name: 'Fetch all branches from remote'  # Fetches all branches from the remote to ensure the local repo is up-to-date
         run: git fetch --all
         
-      - name: 'Checkout prod branch'
+      - name: 'Checkout prod branch'    # Switches to the 'prod' branch or creates it if it doesn't exist
         run: git checkout prod || git checkout -t origin/prod
         
-      - name: 'Set Git Configurations'
+      - name: 'Set Git Configurations'  # Configures Git with the user's email and name
         run: |
             git config user.email "jensebra@ntnu.no"
             git config user.name "Jenserling"
         
-      - name: 'Merge stage into prod'
+      - name: 'Merge stage into prod'   # Merges the 'stage' branch into 'prod' branch
         run: |
             git merge --no-ff --allow-unrelated-histories -X theirs origin/stage -m "Merging stage into prod [skip ci]"
         
-      - name: 'Push changes to prod branch'
+      - name: 'Push changes to prod branch'  # Pushes the changes to the 'prod' branch on the remote repository
         run: git push git@github.com:jenserling/iac-oppgave2.git prod
-        
-
-        
-          
