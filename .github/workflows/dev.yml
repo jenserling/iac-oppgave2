@@ -1,7 +1,8 @@
 # Name of the GitHub Actions workflow
 name: 'Terraform CI/CD for dev Branch'
 
-# Specifies the events that will trigger the workflow
+# Here we define the trigger for the workflow. It will run on 'push' events to the 'dev' branch
+# and 'pull_request' events that target the 'stage' branch.
 on:
   push:
     branches:         # When there is a push to branches
@@ -11,58 +12,73 @@ on:
     branches:
       - stage         # When pull requests target the 'stage' branch
 
-# Specifies the permissions needed by the workflow
+# Permissions needed by the GitHub token to run the workflow.
 permissions:
   id-token: write          # Workflow has write access to GitHub's OIDC token
   issues: write            # Workflow can create and modify issues
   pull-requests: write     # Workflow can create and modify pull requests
   contents: read           # Workflow can read the repository's content
 
-# Defines the jobs that will be run by the workflow
+# This job runs the Terraform tests and prepares a merge to the stage branch.
 jobs:
   terraform-tests-dev:     # The job ID
     name: 'Terraform Tests and Merge to Stage'
-    if: github.ref == 'refs/heads/dev'  # Condition to only run this job if the push is to 'dev' branch
-    runs-on: ubuntu-latest              # The type of virtual host machine to run the job on
+    # Conditional to only run this job if the push is to the 'dev' branch.
+    if: github.ref == 'refs/heads/dev'
+    # This job runs on the latest version of Ubuntu available on GitHub Actions runners.
+    runs-on: ubuntu-latest
 
+    # These are the steps the job will execute, in order.
     steps:
-      - name: 'Checkout'                # Checks out the repository code
-        uses: actions/checkout@v3       # Uses GitHub's checkout action to do so
+      # Checkout the repository code at the commit that triggered the workflow.
+      - name: 'Checkout'
+        uses: actions/checkout@v3
 
-      - name: 'Setup Terraform'         # Sets up Terraform CLI
+      # Setup Terraform CLI in the runner environment.
+      - name: 'Setup Terraform'
         uses: hashicorp/setup-terraform@v2
 
-      - name: 'Terraform Format'        # Checks the format of the Terraform files
+      # Run 'terraform fmt' to check that all Terraform files are correctly formatted.
+      - name: 'Terraform Format'
         run: terraform fmt -check -recursive
 
-      - name: 'Terraform Init'          # Initializes Terraform
+      # Run 'terraform init' to initialize the Terraform working directory.
+      - name: 'Terraform Init'
         run: terraform init
-        env:                            # Sets up environment variables for Azure credentials
+        # Setting up environment variables with Azure credentials, required for Terraform to authenticate and manage resources.
+        env:
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
-      - name: 'Terraform Validate'      # Validates the Terraform files
+      # Run 'terraform validate' to check whether the configuration is valid.
+      - name: 'Terraform Validate'
         run: terraform validate
 
-      - uses: terraform-linters/setup-tflint@v3  # Sets up Terraform linter
+      # Setup TFLint for linting Terraform files to catch possible errors.
+      - uses: terraform-linters/setup-tflint@v3
         with:
           tflint_version: latest
 
-      - name: 'Terraform Plan'          # Runs Terraform plan to show changes that will be applied
+      # Create an execution plan for Terraform.
+      - name: 'Terraform Plan'
         run: terraform plan
-        env:                            # Environment variables repeated for Azure
+        # Re-using the Azure credentials in the environment variables for the plan step.
+        env:
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
-      - name: 'Setup SSH Key'           # Sets up SSH keys for authentication
+      # Setup the SSH key required to push changes to the repository.
+      - name: 'Setup SSH Key'
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
+      # Merge the 'dev' branch into the 'stage' branch if all tests pass.
+      # This uses a 'force merge' strategy to override any conflicts with the changes from the 'dev' branch.
       - name: 'Force Merge dev into stage if test passed'
         if: success()                   # Only runs if all previous steps were successful
         run: |
