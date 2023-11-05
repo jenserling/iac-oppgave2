@@ -56,16 +56,16 @@ jobs:
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
       - name: 'Force Merge dev into stage if test passed'
+        env:
+            GIT_PAT: ${{ secrets.GIT_PAT }}
         run: |
             git config --global user.name 'jenserling'
             git config --global user.email 'jensebra.stud.ntnu.no'
             git fetch origin stage:stage
             git checkout stage
-            # Merging while allowing unrelated histories
             git merge --no-ff dev -m "Merging dev into stage [skip ci]" --allow-unrelated-histories
-            git push origin stage
-        if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
-
+            git push https://${{ secrets.GIT_PAT }}@github.com/jenserling/iac-oppgave2 HEAD:stage
+        
   stage-approval:
     name: 'Wait for Stage Approval'
     if: github.ref == 'refs/heads/stage' && github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'stage-approved'
@@ -95,4 +95,3 @@ jobs:
 
       - name: 'Terraform Apply for Prod'
         run: terraform apply -auto-approve
-        
