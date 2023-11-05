@@ -34,11 +34,16 @@ jobs:
           terraform fmt -recursive
           git add .
           if [[ `git status --porcelain` ]]; then
-            git -c "user.name=jenserling" -c "user.email=jensebra@stud.ntnu.no" commit -m "Format Terraform files"
-            git -c http.extraHeader="AUTHORIZATION: bearer ${{ secrets.GIT_PAT }}" push
+            git config --local user.name "jenserling"
+            git config --local user.email "jensebra@stud.ntnu.no"
+            git commit -m "Format Terraform files"
+            # Use the PAT stored in the secrets to push the changes
+            git push https://${{ secrets.GIT_PAT }}@github.com/jenserling/iac-oppgave2.git
           else
             echo "No changes to commit"
           fi
+        env:
+          TERRAFORM_CLI_PATH: ${{ env.TERRAFORM_CLI_PATH }}
 
       - name: 'Terraform Plan'
         run: terraform plan
