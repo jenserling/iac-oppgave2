@@ -15,40 +15,36 @@ jobs:
     environment: production
 
     steps:
-    - name: 'Checkout'
-      uses: actions/checkout@v2
+      - name: 'Checkout'
+        uses: actions/checkout@v2
 
-    - name: 'Setup Terraform'
-      uses: hashicorp/setup-terraform@v1
+      - name: 'Setup Terraform'
+        uses: hashicorp/setup-terraform@v1
 
-    - name: 'Configure Git'
-      run: |
-        git config --global user.name "jenserling"
-        git config --global user.email "jensebra@stud.ntnu.no"
+      - name: 'Terraform Init'
+        run: terraform init
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
-    - name: 'Terraform Format'
-      run: |
-        terraform fmt -recursive
-        git add .
-        if [[ `git status --porcelain` ]]; then
-          git commit -m "Format Terraform files"
-          git push
-        else
-          echo "No changes to commit"
-        fi
+      - name: 'Terraform Format'
+        run: |
+          terraform fmt -recursive
+          git add .
+          if [[ `git status --porcelain` ]]; then
+            git -c "user.name=jenserling" -c "user.email=jensebra@stud.ntnu.no" commit -m "Format Terraform files"
+            git -c http.extraHeader="AUTHORIZATION: basic $(echo -n jenserling:${{ secrets.GIT_PAT }} | base64)" push
+          else
+            echo "No changes to commit"
+        env:
+          TERRAFORM_CLI_PATH: ${{ env.TERRAFORM_CLI_PATH }}
 
-    - name: 'Terraform Init'
-      run: terraform init
-      env:
-        ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-        ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-        ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-
-    - name: 'Terraform Plan'
-      run: terraform plan
-      env:
-        ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-        ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-        ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      - name: 'Terraform Plan'
+        run: terraform plan
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
