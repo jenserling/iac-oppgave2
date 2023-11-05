@@ -1,11 +1,11 @@
-name: 'Terraform CI/CD for dev Branch'
+name: 'Terraform CI/CD for prod Branch'
+
 
 on:
-  push:
-    branches:
-      - dev
-  pull_request:
-    types: [opened, synchronize, reopened, labeled]
+  workflow_run:
+    workflows: ["Terraform CI/CD for Stage Branch"]  # Name of the stage workflow file
+    types:
+      - completed
     branches:
       - stage
 
@@ -16,9 +16,9 @@ permissions:
   contents: read
 
 jobs:
-  terraform-tests-dev:
+  terraform-tests-stage:
     name: 'Terraform Tests and Merge to Stage'
-    if: github.ref == 'refs/heads/dev'
+    
     runs-on: ubuntu-latest
 
     steps:
@@ -44,7 +44,7 @@ jobs:
 
       - uses: terraform-linters/setup-tflint@v3
         with:
-          tflint_version: latest
+          tflint_version: 'latest'
 
       - name: 'Terraform Plan'
         run: terraform plan
@@ -53,18 +53,14 @@ jobs:
           ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-
-      - name: 'Setup SSH Key'
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: 'Force Merge dev into stage if test passed'
-        if: success()
-        run: |
-            git config --global user.name 'jenserling'
-            git config --global user.email 'jensebra.stud.ntnu.no'
-            git fetch origin stage:stage
-            git checkout stage
-            git merge --no-ff --allow-unrelated-histories -X theirs dev -m "Merging dev into stage [skip ci]"
-            git push git@github.com:jenserling/iac-oppgave2.git HEAD:stage
+         
+      - name: 'Terraform Apply'
+        if: github.ref == 'refs/heads/prod' # Only run this on the prod branch or adjust the condition as needed
+        run: terraform apply -auto-approve
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  
+          

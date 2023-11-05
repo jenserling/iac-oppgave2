@@ -3,7 +3,7 @@ name: 'Terraform CI/CD for Stage Branch'
 
 on:
   workflow_run:
-    workflows: ["Terraform CI/CD"]  # Name of the dev workflow file
+    workflows: ["Terraform CI/CD for dev Branch"]  # Name of the dev workflow file
     types:
       - completed
     branches:
