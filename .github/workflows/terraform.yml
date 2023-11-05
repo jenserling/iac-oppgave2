@@ -21,6 +21,13 @@ jobs:
     - name: 'Setup Terraform'
       uses: hashicorp/setup-terraform@v1
 
+    - name: 'Terraform Format'
+      run: |
+        terraform fmt -recursive
+        git add -u
+        git commit -m "Format Terraform files"
+        git push
+
     - name: 'Terraform Init'
       run: terraform init
       env:
@@ -28,9 +35,6 @@ jobs:
         ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
         ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-
-    - name: 'Terraform Format'
-      run: terraform fmt -check
 
     - name: 'Terraform Plan'
       run: terraform plan
