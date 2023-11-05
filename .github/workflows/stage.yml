@@ -1,4 +1,4 @@
-name: 'Terraform CI/CD for Stage Branch'
+name: 'Terraform CI/CD for stage Branch'
 
 
 on:
@@ -59,12 +59,28 @@ jobs:
         with:
             ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
   
-      - name: 'Force Merge stage into prod if test passed'
-        if: success()
+      - name: 'Configure Git'
         run: |
               git config --global user.name 'jenserling'
               git config --global user.email 'jensebra.stud.ntnu.no'
-              git fetch origin prod:prod
+          
+      - name: 'Checkout prod branch'
+        run: git checkout prod
+          
+      - name: 'Fetch all branches'
+        run: git fetch --all
+          
+      - name: 'Check out stage branch'
+        run: git checkout stage
+          
+      - name: 'Merge stage into prod'
+        run: |
               git checkout prod
               git merge --no-ff --allow-unrelated-histories -X theirs stage -m "Merging stage into prod [skip ci]"
-              git push git@github.com:jenserling/iac-oppgave2.git HEAD:prod
+          
+      - name: 'Push changes to prod branch'
+        run: git push git@github.com:jenserling/iac-oppgave2.git HEAD:prod
+        env:
+          SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
+          SSH_AGENT_PID: ${{ env.SSH_AGENT_PID }}
+          
