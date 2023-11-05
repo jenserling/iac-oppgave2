@@ -5,12 +5,6 @@ on:
   push:
     branches:
       - prod
-  workflow_run:
-    workflows: ["Terraform CI/CD for stage Branch"]
-    types:
-      - completed
-    branches:
-      - prod
 
 permissions:
   id-token: write
