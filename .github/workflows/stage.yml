@@ -55,32 +55,37 @@ jobs:
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
   merge-to-prod:
-    name: 'Merge stage into prod after tests'
-    needs: [terraform-tests-stage]
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'stage'
-    runs-on: ubuntu-latest
-    steps:
-      - name: 'Checkout prod branch'
-        uses: actions/checkout@v3
-        with:
-          ref: 'prod'
+            name: 'Merge stage into prod after tests'
+            needs: [terraform-tests-stage]
+            if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'stage'
+            runs-on: ubuntu-latest
+            environment:
+              name: prod
+              url: ${{ steps.deploy.outputs.deployment-url }} # Optional: If there is a deployment step that provides a URL
+            steps:
+              - name: 'Checkout prod branch'
+                uses: actions/checkout@v3
+                with:
+                  ref: 'prod'
+          
+              - name: 'Fetch stage branch'
+                run: git fetch origin stage:stage
+          
+              - name: 'Setup SSH Key'
+                uses: webfactory/ssh-agent@v0.5.3
+                with:
+                  ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          
+              - name: 'Merge stage into prod'
+                if: success()
+                run: |
+                  git config --global user.name 'jenserling'
+                  git config --global user.email 'jensebra.stud.ntnu.no'
+                  git merge --no-ff --allow-unrelated-histories -X theirs stage -m "Merging stage into prod [skip ci]"
+          
+              - name: 'Push changes to prod branch'
+                run: git push origin prod
+          
 
-      - name: 'Fetch stage branch'
-        run: git fetch origin stage:stage
-
-      - name: 'Setup SSH Key'
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: 'Merge stage into prod'
-        if: success()
-        run: |
-          git config --global user.name 'jenserling'
-          git config --global user.email 'jensebra.stud.ntnu.no'
-          git merge --no-ff --allow-unrelated-histories -X theirs stage -m "Merging stage into prod [skip ci]"
-
-      - name: 'Push changes to prod branch'
-        run: git push origin prod
 
         
