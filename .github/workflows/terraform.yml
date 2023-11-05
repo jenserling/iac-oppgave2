@@ -43,6 +43,9 @@ jobs:
         run: terraform validate
         # Validates the Terraform files
 
+      - name: 'Terraform Lint'
+        run: tflint --init && tflint
+
       - name: 'Terraform Plan'
         run: terraform plan
         env:
