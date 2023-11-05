@@ -57,30 +57,25 @@ jobs:
       - name: 'Setup SSH Key'
         uses: webfactory/ssh-agent@v0.5.3
         with:
-            ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-  
-      - name: 'Configure Git'
-        run: |
-              git config --global user.name 'jenserling'
-              git config --global user.email 'jensebra.stud.ntnu.no'
-          
-      - name: 'Checkout prod branch'
-        run: git checkout prod
-          
-      - name: 'Fetch all branches'
+         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+        
+      - name: 'Fetch all branches from remote'
         run: git fetch --all
-          
-      - name: 'Check out stage branch'
-        run: git checkout stage
-          
+        
+      - name: 'Checkout prod branch'
+        run: git checkout -b prod --track origin/prod
+        env:
+            SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
+            SSH_AGENT_PID: ${{ env.SSH_AGENT_PID }}
+        
       - name: 'Merge stage into prod'
         run: |
-              git checkout prod
-              git merge --no-ff --allow-unrelated-histories -X theirs stage -m "Merging stage into prod [skip ci]"
-          
+            git merge --no-ff --allow-unrelated-histories -X theirs origin/stage -m "Merging stage into prod [skip ci]"
+        
       - name: 'Push changes to prod branch'
-        run: git push git@github.com:jenserling/iac-oppgave2.git HEAD:prod
+        run: git push origin prod
         env:
-          SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
-          SSH_AGENT_PID: ${{ env.SSH_AGENT_PID }}
+            SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
+            SSH_AGENT_PID: ${{ env.SSH_AGENT_PID }}
+        
           
