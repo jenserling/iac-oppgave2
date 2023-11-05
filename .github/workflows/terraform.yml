@@ -55,17 +55,21 @@ jobs:
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
+      - name: 'Setup SSH Key'
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
       - name: 'Force Merge dev into stage if test passed'
         if: success()
-        env:
-          GIT_PAT: ${{ secrets.GIT_PAT }}
         run: |
-          git config --global user.name 'jenserling'
-          git config --global user.email 'jensebra.stud.ntnu.no'
-          git fetch origin stage:stage
-          git checkout stage
-          git merge --no-ff -X theirs dev -m "Merging dev into stage [skip ci]"
-          git push https://${{ secrets.GIT_PAT }}@github.com/jenserling/iac-oppgave2 HEAD:stage
+            git config --global user.name 'jenserling'
+            git config --global user.email 'jensebra.stud.ntnu.no'
+            git fetch origin stage:stage
+            git checkout stage
+            git merge --no-ff --allow-unrelated-histories -X theirs dev -m "Merging dev into stage [skip ci]"
+            git push git@github.com:jenserling/iac-oppgave2.git HEAD:stage
+        
         
   stage-approval:
     name: 'Wait for Stage Approval'
@@ -77,16 +81,19 @@ jobs:
       - name: 'Checkout'
         uses: actions/checkout@v3
 
+      - name: 'Setup SSH Key'
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
       - name: 'Merge Stage to Prod with Manual Approval'
-        env:
-          GIT_PAT: ${{ secrets.GIT_PAT }}
         run: |
           git config --global user.name 'jenserling'
           git config --global user.email 'jensebra.stud.ntnu.no'
           git fetch origin prod:prod
           git checkout prod
           git merge --no-ff stage -m "Merging stage into prod after approval [skip ci]"
-          git push https://${{ secrets.GIT_PAT }}@github.com/jenserling/iac-oppgave2 HEAD:prod
+          git push git@github.com:jenserling/iac-oppgave2.git HEAD:stage
           
   prod-deployment:
     name: 'Production Deployment'
