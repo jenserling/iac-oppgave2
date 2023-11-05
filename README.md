@@ -1,9 +1,10 @@
 # Terraform Infrastructure as Code (IaC)
-
 This repository contains Terraform scripts for managing cloud infrastructure. It uses Terraform to provision and manage resources declaratively with versioned configuration files.
 
-## Pre-requisites
+## Continuous Integration / Continuous Deployment (CI/CD)
+This repository is also equipped with GitHub Actions workflows for CI/CD, automatically running Terraform tests, and applying configurations when changes are merged into specific branches. To utilize these workflows, ensure your GitHub repository secrets are configured with the necessary credentials and SSH keys.
 
+## Pre-requisites
 Before you can use these Terraform scripts, ensure you have the following installed and configured:
 
 - **Terraform:** You should have the latest version of Terraform installed on your system. Visit [Terraform's website](https://www.terraform.io/downloads.html) for download and installation instructions.
@@ -33,14 +34,3 @@ After applying, you can inspect the current state of your resources using: "terr
 
 6. **Destroy Infrastructure:**
 When you no longer need the resources, you can destroy them with: "terraform destroy" again, you'll be prompted to confirm the action before Terraform deletes anything.
-
-## Continuous Integration / Continuous Deployment (CI/CD)
-This repository is also equipped with GitHub Actions workflows for CI/CD, automatically running Terraform tests, and applying configurations when changes are merged into specific branches. To utilize these workflows, ensure your GitHub repository secrets are configured with the necessary credentials and SSH keys.
-
-
-
-
-
-
-
-
